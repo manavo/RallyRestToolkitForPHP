@@ -55,6 +55,7 @@ $result = $rally->update('defect', $defect_id, array(
 
 ## Versions ##
 
+ - 2.0 (2014.06.13): Updating to work with the v2.0 API
  - 1.4 (2013.02.05): Adding method to read user reference $obj->me()
  - 1.3 (2013.01.29): Adding workspace calls to all methods
  - 1.2 (2013.01.24): Allowing you to specify different workspaces
