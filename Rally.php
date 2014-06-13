@@ -9,7 +9,7 @@ use Exception;
  *
  * Simple class for interacting with RallyDev web services
  *
- * @version 1.40
+ * @version 2.0
  * @author St. John Johnson <stjohn@yahoo-inc.com>
  * @see http://github.com/yahoo/php-rally-connector
  * @copyright Copyright (c) 2013, Yahoo! Inc.  All rights reserved.
@@ -52,9 +52,9 @@ class Rally {
   // Just for debugging
   private $_debug = false;
   // Some fancy user agent here
-  private $_agent = 'PHP - Rally Api - 1.4';
+  private $_agent = 'PHP - Rally Api - 2.0';
   // Current API version
-  private $_version = '1.40';
+  private $_version = 'v2.0';
   // Current Workspace
   private $_workspace;
   // These headers are required to get valid JSON responses
@@ -71,6 +71,8 @@ class Rally {
   );
   // User object
   protected $_user = '';
+  // User Security Token
+  protected $_securityToken;
 
   /**
    * Create Rally Api Object
@@ -92,9 +94,14 @@ class Rally {
     $this->_setopt(CURLOPT_VERBOSE, $this->_debug);
     $this->_setopt(CURLOPT_USERAGENT, $this->_agent);
     $this->_setopt(CURLOPT_HEADER, 0);
+    $this->_setopt(CURLOPT_COOKIEFILE);
     // Authentication
     $this->_setopt(CURLOPT_USERPWD, "$username:$password");
     $this->_setopt(CURLOPT_HTTPAUTH, CURLAUTH_ANY);
+
+	//Save the security token for PUT/POST/DELETE
+    $authResults = $this->_get('security/authorize');
+    $this->_securityToken = $authResults['SecurityToken'];
 
     // Validate Login was Successful
     $user_data = $this->find('user', "(EmailAddress = \"{$username}\")");
@@ -156,7 +163,7 @@ class Rally {
     if ($id) {
       $ref .= "/{$id}";
     }
-    return $ref . '.js';
+    return $ref;
   }
 
   /**
@@ -191,7 +198,7 @@ class Rally {
     // Loop through and ask for results
     $results = array();
     for (;;) { // I hate infinite loops
-      $objects = $this->_get($this->_addWorkspace("{$object}.js", $params));
+      $objects = $this->_get($this->_addWorkspace("{$object}", $params));
       $results = array_merge($results, $objects['Results']);
 
       // Continue only if there are more
@@ -327,7 +334,7 @@ class Rally {
     $payload = json_encode(array('Content' => $params));
     $this->_setopt(CURLOPT_POSTFIELDS, $payload);
 
-    return $this->_execute($method);
+    return $this->_execute($method."?key={$this->_securityToken}");
   }
 
   /**
@@ -346,7 +353,7 @@ class Rally {
     $payload = json_encode(array('Content' => $params));
     $this->_setopt(CURLOPT_POSTFIELDS, $payload);
 
-    return $this->_execute($method);
+    return $this->_execute($method."?key={$this->_securityToken}");
   }
 
   /**
@@ -360,7 +367,7 @@ class Rally {
   protected function _delete($method) {
     $this->_setopt(CURLOPT_CUSTOMREQUEST, 'DELETE');
 
-    return $this->_execute($method);
+    return $this->_execute($method."?key={$this->_securityToken}");
   }
 
   /**
